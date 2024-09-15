@@ -1,7 +1,12 @@
+import { ReactFlowProvider } from "@xyflow/react";
 import NodeGraph from "./components/NodeGraph";
 
 function App() {
-  return <NodeGraph />;
+  return (
+    <ReactFlowProvider>
+      <NodeGraph />
+    </ReactFlowProvider>
+  );
 }
 
 export default App;

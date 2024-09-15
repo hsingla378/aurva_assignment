@@ -1,9 +1,9 @@
-import { NodeProps } from "@xyflow/react";
+import { NodeProps, Handle, Position } from "@xyflow/react";
 import React from "react";
 import { getNodeStyle } from "../utils/constant";
 
-const Node: React.FC<NodeProps> = ({ data, type }) => {
-  const { border, backgroundColor, icon: Icon } = getNodeStyle(type);
+const CategoryNode: React.FC<NodeProps> = ({ data }) => {
+  const { border, backgroundColor, icon: Icon } = getNodeStyle("category");
 
   return (
     <div
@@ -20,10 +20,12 @@ const Node: React.FC<NodeProps> = ({ data, type }) => {
         ...data.style,
       }}
     >
-      {Icon && <Icon />}
+      <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
+      <Icon />
       <strong>{data.label}</strong>
+      <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
     </div>
   );
 };
 
-export default Node;
+export default CategoryNode;

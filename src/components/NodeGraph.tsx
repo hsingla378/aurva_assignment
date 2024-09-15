@@ -11,7 +11,7 @@ import {
   BackgroundVariant,
 } from "@xyflow/react";
 import Node from "./Node";
-import { fetchMealCategories } from "../utils/api";
+import { fetchMealCategories, fetchMealsByCategory } from "../utils/api";
 import { MealCategory } from "../utils/types";
 
 import "@xyflow/react/dist/style.css";
@@ -50,7 +50,7 @@ function NodeGraph() {
 
     // Generate category nodes with unique IDs
     const newNodes = categories.map((category, index) => ({
-      id: `category-${category.idCategory}`,
+      id: `category-${category.strCategory}`,
       position: { x: 600, y: 50 + index * 120 },
       data: {
         label: category.strCategory,
@@ -60,9 +60,9 @@ function NodeGraph() {
 
     // Generate edges that connect the "Explore" node to each category node
     const newEdges = categories.map((category) => ({
-      id: `e1-category-${category.idCategory}`,
+      id: `e1-category-${category.strCategory}`,
       source: "1",
-      target: `category-${category.idCategory}`,
+      target: `category-${category.strCategory}`,
     }));
 
     // Add new nodes and preserve the "Explore" node
@@ -79,7 +79,7 @@ function NodeGraph() {
 
   // Handle click on any node, including categories
   const handleNodeClick = useCallback(
-    (event, node) => {
+    async (event, node) => {
       if (node.id === "1") {
         handleExploreClick();
       } else if (node.type === "category") {
@@ -102,38 +102,88 @@ function NodeGraph() {
           const newMap = { ...parentChildMap };
           delete newMap[node.id];
           setParentChildMap(newMap);
-        } else {
-          // Add "View Meals" node (expand)
-          const viewMealsNode = {
-            id: viewMealsNodeId,
-            position: { x: node.position.x + 300, y: node.position.y },
-            data: {
-              label: "View Meals",
-            },
-            type: "viewMeals",
-          };
-
-          // Create an edge from the category to the "View Meals" node
-          const viewMealsEdge = {
-            id: `e-${node.id}-view-meals`,
-            source: node.id,
-            target: viewMealsNodeId,
-          };
-
-          // Add new node and edge
-          setNodes((existingNodes) => [...existingNodes, viewMealsNode]);
-          setEdges((existingEdges) => [...existingEdges, viewMealsEdge]);
-
-          // Track the child node
-          setParentChildMap((prevMap) => ({
-            ...prevMap,
-            [node.id]: [viewMealsNodeId],
-          }));
-
-          setTimeout(() => {
-            fitView({ padding: 0.1, duration: 500 });
-          }, 200);
         }
+
+        // Add "View Meals" node (expand)
+        const viewMealsNode = {
+          id: viewMealsNodeId,
+          position: { x: node.position.x + 300, y: node.position.y },
+          data: {
+            label: "View Meals",
+            categoryName: node.data.label,
+          },
+          type: "viewMeals",
+        };
+
+        // Create an edge from the category to the "View Meals" node
+        const viewMealsEdge = {
+          id: `e-${node.id}-view-meals`,
+          source: node.id,
+          target: viewMealsNodeId,
+        };
+
+        // Add new node and edge
+        setNodes((existingNodes) => [...existingNodes, viewMealsNode]);
+        setEdges((existingEdges) => [...existingEdges, viewMealsEdge]);
+
+        // Track the child node
+        setParentChildMap((prevMap) => ({
+          ...prevMap,
+          [node.id]: [...(prevMap[node.id] || []), viewMealsNodeId],
+        }));
+
+        setTimeout(() => {
+          fitView({ padding: 0.1, duration: 500 });
+        }, 200);
+      } else if (node.type === "viewMeals") {
+        // Handle fetching and displaying meals on clicking "View Meals"
+        const categoryName = node.data.categoryName;
+
+        const meals = await fetchMealsByCategory(categoryName);
+
+        if (!meals || meals.length === 0) {
+          console.warn(`No meals found for category: ${categoryName}`);
+          return;
+        }
+
+        const mealNodes = meals.map((meal, index) => ({
+          id: `meal-${meal.idMeal}`,
+          position: {
+            x: node.position.x + 300,
+            y: node.position.y + index * 80,
+          },
+          data: {
+            label: meal.strMeal,
+            style: {
+              backgroundImage: `url(${meal.strMealThumb})`,
+              backgroundSize: "cover",
+            },
+          },
+          type: "meal",
+        }));
+
+        // Create edges from "View Meals" to each meal node
+        const mealEdges = meals.map((meal) => ({
+          id: `e-${node.id}-meal-${meal.idMeal}`,
+          source: node.id,
+          target: `meal-${meal.idMeal}`,
+        }));
+
+        setNodes((existingNodes) => [...existingNodes, ...mealNodes]);
+        setEdges((existingEdges) => [...existingEdges, ...mealEdges]);
+
+        // Track the child meal nodes
+        setParentChildMap((prevMap) => ({
+          ...prevMap,
+          [node.id]: [
+            ...(prevMap[node.id] || []),
+            ...mealNodes.map((meal) => meal.id),
+          ],
+        }));
+
+        setTimeout(() => {
+          fitView({ padding: 0.1, duration: 500 });
+        }, 200);
       }
     },
     [nodes, parentChildMap]
@@ -148,6 +198,7 @@ function NodeGraph() {
     explore: Node,
     category: Node,
     viewMeals: Node,
+    meal: Node,
   };
 
   return (

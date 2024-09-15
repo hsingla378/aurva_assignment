@@ -9,11 +9,8 @@ import {
   useReactFlow,
   Background,
   BackgroundVariant,
-  Handle,
-  Position,
 } from "@xyflow/react";
-import ExploreNode from "./ExploreNode";
-import CategoryNode from "./CategoryNode";
+import Node from "./Node";
 import { fetchMealCategories } from "../utils/api";
 import { MealCategory } from "../utils/types";
 
@@ -39,6 +36,11 @@ function NodeGraph() {
 
   const { fitView } = useReactFlow();
 
+  // Parent-Child relationships tracker
+  const [parentChildMap, setParentChildMap] = useState<
+    Record<string, string[]>
+  >({});
+
   // Fetch categories and create new nodes and edges
   const handleExploreClick = useCallback(async () => {
     if (exploreClicked) return;
@@ -53,7 +55,7 @@ function NodeGraph() {
       data: {
         label: category.strCategory,
       },
-      type: "category",
+      type: "category", // Pass the "category" type
     }));
 
     // Generate edges that connect the "Explore" node to each category node
@@ -73,20 +75,83 @@ function NodeGraph() {
     setTimeout(() => {
       fitView({ padding: 0.1, duration: 500 });
     }, 200);
-  }, [exploreClicked, setNodes, setEdges, fitView]);
+  }, [exploreClicked]);
+
+  // Handle click on any node, including categories
+  const handleNodeClick = useCallback(
+    (event, node) => {
+      if (node.id === "1") {
+        handleExploreClick();
+      } else if (node.type === "category") {
+        const viewMealsNodeId = `view-meals-${node.id}`;
+
+        // Check if we have child nodes for this category in the parentChildMap
+        if (parentChildMap[node.id]) {
+          // Remove child nodes if they are already visible (collapse)
+          const childNodes = parentChildMap[node.id];
+
+          setNodes((existingNodes) =>
+            existingNodes.filter((n) => !childNodes.includes(n.id))
+          );
+
+          setEdges((existingEdges) =>
+            existingEdges.filter((e) => !childNodes.includes(e.target))
+          );
+
+          // Update the parent-child map to remove the entry
+          const newMap = { ...parentChildMap };
+          delete newMap[node.id];
+          setParentChildMap(newMap);
+        } else {
+          // Add "View Meals" node (expand)
+          const viewMealsNode = {
+            id: viewMealsNodeId,
+            position: { x: node.position.x + 300, y: node.position.y },
+            data: {
+              label: "View Meals",
+            },
+            type: "viewMeals",
+          };
+
+          // Create an edge from the category to the "View Meals" node
+          const viewMealsEdge = {
+            id: `e-${node.id}-view-meals`,
+            source: node.id,
+            target: viewMealsNodeId,
+          };
+
+          // Add new node and edge
+          setNodes((existingNodes) => [...existingNodes, viewMealsNode]);
+          setEdges((existingEdges) => [...existingEdges, viewMealsEdge]);
+
+          // Track the child node
+          setParentChildMap((prevMap) => ({
+            ...prevMap,
+            [node.id]: [viewMealsNodeId],
+          }));
+
+          setTimeout(() => {
+            fitView({ padding: 0.1, duration: 500 });
+          }, 200);
+        }
+      }
+    },
+    [nodes, parentChildMap]
+  );
 
   const onConnect = useCallback(
     (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
+    [edges]
   );
 
   const nodeTypes = {
-    explore: ExploreNode,
-    category: CategoryNode,
+    explore: Node,
+    category: Node,
+    viewMeals: Node,
   };
 
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
+    <div className="w-screen h-screen transition-all">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -95,11 +160,7 @@ function NodeGraph() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         fitView
-        onNodeClick={(event, node) => {
-          if (node.id === "1") {
-            handleExploreClick();
-          }
-        }}
+        onNodeClick={handleNodeClick}
       >
         <Background color="#ccc" variant={BackgroundVariant.Dots} />
       </ReactFlow>

@@ -39,6 +39,7 @@ function NodeGraph() {
   const [exploreClicked, setExploreClicked] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [mealDetails, setMealDetails] = useState(null);
+  const [ingredientsMap, setIngredientsMap] = useState({});
 
   const { fitView } = useReactFlow();
 
@@ -160,10 +161,6 @@ function NodeGraph() {
           },
           data: {
             label: meal.strMeal,
-            style: {
-              backgroundImage: `url(${meal.strMealThumb})`,
-              backgroundSize: "cover",
-            },
           },
           type: "meal",
         }));
@@ -195,7 +192,7 @@ function NodeGraph() {
         const viewIngredientsNode = {
           id: `view-ingredients-${node.id}`,
           position: { x: node.position.x + 300, y: node.position.y - 60 },
-          data: { label: "View Ingredients" },
+          data: { label: "View Ingredients", mealId: node.id.split("-")[1] },
           type: "view",
         };
 
@@ -237,6 +234,56 @@ function NodeGraph() {
         setTimeout(() => {
           fitView({ padding: 0.1, duration: 500 });
         }, 200);
+      } else if (
+        node.type === "view" &&
+        node.data.label === "View Ingredients"
+      ) {
+        // Handle fetching ingredients and displaying them as child nodes
+        const mealId = node.data.mealId;
+
+        // Fetch the meal details if not already cached
+        let mealDetails = ingredientsMap[mealId];
+        if (!mealDetails) {
+          mealDetails = await fetchMealDetails(mealId);
+          setIngredientsMap((prevMap) => ({
+            ...prevMap,
+            [mealId]: mealDetails,
+          }));
+        }
+
+        // Extract non-empty ingredients
+        const ingredients = [];
+        for (let i = 1; i <= 20; i++) {
+          const ingredient = mealDetails[`strIngredient${i}`];
+          const measure = mealDetails[`strMeasure${i}`];
+          if (ingredient && ingredient.trim()) {
+            ingredients.push(`${ingredient} - ${measure}`);
+          }
+        }
+
+        // Create ingredient nodes
+        const ingredientNodes = ingredients.map((ingredient, index) => ({
+          id: `ingredient-${mealId}-${index}`,
+          position: {
+            x: node.position.x + 300,
+            y: node.position.y + index * 80,
+          },
+          data: { label: ingredient },
+          type: "ingredient",
+        }));
+
+        const ingredientEdges = ingredientNodes.map((ingredientNode) => ({
+          id: `e-${node.id}-${ingredientNode.id}`,
+          source: node.id,
+          target: ingredientNode.id,
+        }));
+
+        setNodes((existingNodes) => [...existingNodes, ...ingredientNodes]);
+        setEdges((existingEdges) => [...existingEdges, ...ingredientEdges]);
+
+        setTimeout(() => {
+          fitView({ padding: 0.1, duration: 500 });
+        }, 200);
       } else if (node.type === "view" && node.data.label === "View Details") {
         const mealId = node.data.mealId;
         const mealDetailsResponse = await fetchMealDetails(mealId);
@@ -244,7 +291,7 @@ function NodeGraph() {
         setDrawerVisible(true);
       }
     },
-    [nodes, parentChildMap]
+    [nodes, parentChildMap, ingredientsMap]
   );
 
   const onConnect = useCallback(
@@ -258,6 +305,7 @@ function NodeGraph() {
     viewMeals: Node,
     meal: Node,
     view: Node,
+    ingredient: Node,
   };
 
   return (

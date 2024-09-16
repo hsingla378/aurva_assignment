@@ -11,9 +11,13 @@ import {
   BackgroundVariant,
 } from "@xyflow/react";
 import Node from "./Node";
-import { fetchMealCategories, fetchMealsByCategory } from "../utils/api";
+import {
+  fetchMealCategories,
+  fetchMealsByCategory,
+  fetchMealDetails,
+} from "../utils/api";
 import { MealCategory } from "../utils/types";
-
+import { Drawer } from "antd";
 import "@xyflow/react/dist/style.css";
 
 const initialNodes = [
@@ -33,6 +37,8 @@ function NodeGraph() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [exploreClicked, setExploreClicked] = useState(false);
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [mealDetails, setMealDetails] = useState(null);
 
   const { fitView } = useReactFlow();
 
@@ -203,7 +209,7 @@ function NodeGraph() {
         const viewDetailsNode = {
           id: `view-details-${node.id}`,
           position: { x: node.position.x + 300, y: node.position.y + 60 },
-          data: { label: "View Details" },
+          data: { label: "View Details", mealId: node.id.split("-")[1] },
           type: "view",
         };
 
@@ -231,6 +237,11 @@ function NodeGraph() {
         setTimeout(() => {
           fitView({ padding: 0.1, duration: 500 });
         }, 200);
+      } else if (node.type === "view" && node.data.label === "View Details") {
+        const mealId = node.data.mealId;
+        const mealDetailsResponse = await fetchMealDetails(mealId);
+        setMealDetails(mealDetailsResponse);
+        setDrawerVisible(true);
       }
     },
     [nodes, parentChildMap]
@@ -263,6 +274,72 @@ function NodeGraph() {
       >
         <Background color="#ccc" variant={BackgroundVariant.Dots} />
       </ReactFlow>
+
+      {/* Drawer for showing meal details */}
+      <Drawer
+        title={mealDetails?.strMeal}
+        placement="right"
+        onClose={() => setDrawerVisible(false)}
+        open={drawerVisible}
+        width={400}
+      >
+        {mealDetails && (
+          <div>
+            <img
+              src={mealDetails.strMealThumb}
+              alt={mealDetails.strMeal}
+              className="w-full mb-4"
+            />
+
+            <div className="flex items-center my-2 gap-2 flex-wrap">
+              {mealDetails?.strTags?.split(",")?.map((strTag) => {
+                return (
+                  <div className="rounded-lg border border-blue-300 text-blue-700 py-2 px-4">
+                    {strTag}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="w-full">
+              {mealDetails?.strCategory && (
+                <div className="grid grid-cols-2 w-full">
+                  <p>Category</p>
+                  <p>{mealDetails?.strCategory}</p>
+                </div>
+              )}
+              {mealDetails?.strArea && (
+                <div className="grid grid-cols-2">
+                  <p>Area</p> <p>{mealDetails?.strArea}</p>
+                </div>
+              )}
+              {mealDetails?.strYoutube && (
+                <div className="grid grid-cols-2">
+                  <p>YouTube</p>
+                  <a
+                    href={mealDetails?.strYoutube}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {mealDetails?.strYoutube}
+                  </a>
+                </div>
+              )}
+              {mealDetails?.strSource && (
+                <div className="grid grid-cols-2">
+                  <p>Recipe</p>
+                  <p>{mealDetails?.strSource}</p>
+                </div>
+              )}
+            </div>
+            <div className="border border-black p-2 my-2">
+              <p>
+                <strong>Instructions</strong>{" "}
+              </p>
+              <p>{mealDetails?.strInstructions}</p>
+            </div>
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 }

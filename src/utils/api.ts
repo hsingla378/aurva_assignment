@@ -37,3 +37,23 @@ export const fetchMealsByCategory = async (category: string) => {
     return [];
   }
 };
+
+// Fetch meal details by meal ID
+export const fetchMealDetails = async (mealId: string) => {
+  try {
+    const response = await fetch(
+      `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${mealId}`
+    );
+    const data = await response.json();
+
+    if (!data.meals || data.meals.length === 0) {
+      console.warn(`No meal details found for meal ID: ${mealId}`);
+      return null;
+    }
+
+    return data.meals[0];
+  } catch (error) {
+    console.error("Error fetching meal details:", error);
+    return null;
+  }
+};

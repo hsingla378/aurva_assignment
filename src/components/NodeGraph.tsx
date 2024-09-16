@@ -184,6 +184,53 @@ function NodeGraph() {
         setTimeout(() => {
           fitView({ padding: 0.1, duration: 500 });
         }, 200);
+      } else if (node.type === "meal") {
+        // Handle clicking on a meal node and expanding it to show options
+        const viewIngredientsNode = {
+          id: `view-ingredients-${node.id}`,
+          position: { x: node.position.x + 300, y: node.position.y - 60 },
+          data: { label: "View Ingredients" },
+          type: "view",
+        };
+
+        const viewTagsNode = {
+          id: `view-tags-${node.id}`,
+          position: { x: node.position.x + 300, y: node.position.y },
+          data: { label: "View Tags" },
+          type: "view",
+        };
+
+        const viewDetailsNode = {
+          id: `view-details-${node.id}`,
+          position: { x: node.position.x + 300, y: node.position.y + 60 },
+          data: { label: "View Details" },
+          type: "view",
+        };
+
+        const viewNodes = [viewIngredientsNode, viewTagsNode, viewDetailsNode];
+        const viewEdges = viewNodes.map((viewNode) => ({
+          id: `e-${node.id}-${viewNode.id}`,
+          source: node.id,
+          target: viewNode.id,
+        }));
+
+        setNodes((existingNodes) => [...existingNodes, ...viewNodes]);
+        setEdges((existingEdges) => [...existingEdges, ...viewEdges]);
+
+        // Track the child nodes
+        setParentChildMap((prevMap) => ({
+          ...prevMap,
+          [node.id]: [
+            ...(prevMap[node.id] || []),
+            viewIngredientsNode.id,
+            viewTagsNode.id,
+            viewDetailsNode.id,
+          ],
+        }));
+
+        setTimeout(() => {
+          fitView({ padding: 0.1, duration: 500 });
+        }, 200);
       }
     },
     [nodes, parentChildMap]
@@ -199,6 +246,7 @@ function NodeGraph() {
     category: Node,
     viewMeals: Node,
     meal: Node,
+    view: Node,
   };
 
   return (

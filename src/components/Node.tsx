@@ -12,7 +12,7 @@ const Node: React.FC<NodeProps> = ({ data, type }) => {
         backgroundColor,
         ...data.style,
       }}
-      className="p-2 rounded-lg w-auto text-center flex items-center gap-2"
+      className="p-2 rounded-lg w-auto flex items-center gap-2 max-w-56"
     >
       <Handle type="target" position={Position.Left} className="opacity-0" />
       {Icon && <Icon />}

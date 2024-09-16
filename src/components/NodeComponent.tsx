@@ -1,8 +1,8 @@
-import { NodeProps, Handle, Position } from "@xyflow/react";
+import { NodeProps as XyflowNodeProps, Handle, Position } from "@xyflow/react";
 import React from "react";
 import { getNodeStyle } from "../utils/constant";
 
-const Node: React.FC<NodeProps> = ({ data, type }) => {
+const NodeComponent: React.FC<XyflowNodeProps> = ({ data, type }) => {
   const { border, backgroundColor, icon: Icon } = getNodeStyle(type);
 
   return (
@@ -10,16 +10,16 @@ const Node: React.FC<NodeProps> = ({ data, type }) => {
       style={{
         border,
         backgroundColor,
-        ...data.style,
+        ...(data?.style || {}),
       }}
       className="p-2 rounded-lg w-auto flex items-center gap-2 max-w-56"
     >
       <Handle type="target" position={Position.Left} className="opacity-0" />
       {Icon && <Icon />}
-      <strong>{data.label}</strong>
+      <strong>{data?.label as string}</strong>
       <Handle type="source" position={Position.Right} className="opacity-0" />
     </div>
   );
 };
 
-export default Node;
+export default NodeComponent;

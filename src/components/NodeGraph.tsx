@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ReactFlow,
   useNodesState,
@@ -10,17 +10,17 @@ import {
   Background,
   BackgroundVariant,
 } from "@xyflow/react";
-import Node from "./Node";
+import Node from "./NodeComponent";
 import {
   fetchMealCategories,
   fetchMealsByCategory,
   fetchMealDetails,
   fetchMealsByIngredient,
 } from "../utils/api";
-import { MealCategory } from "../utils/types";
-import { Drawer } from "antd";
+import { Meal, MealCategory, MealDetail, MealNode } from "../utils/types";
 import "@xyflow/react/dist/style.css";
 import toast from "react-hot-toast";
+import MealDetails from "./MealDetails";
 
 const initialNodes = [
   {
@@ -40,7 +40,7 @@ function NodeGraph() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [exploreClicked, setExploreClicked] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [mealDetails, setMealDetails] = useState(null);
+  const [mealDetails, setMealDetails] = useState<MealDetail | null>(null);
   const [ingredientsMap, setIngredientsMap] = useState({});
 
   const { fitView } = useReactFlow();
@@ -88,7 +88,20 @@ function NodeGraph() {
 
   // Handle click on any node, including categories
   const handleNodeClick = useCallback(
-    async (event, node) => {
+    async (
+      event: React.MouseEvent,
+      node: {
+        id: string;
+        type: string;
+        position: { x: number; y: number };
+        data: {
+          label: string;
+          categoryName: string;
+          idMeal: string;
+          ingredient: string;
+        };
+      }
+    ) => {
       if (node.id === "1") {
         handleExploreClick();
       } else if (node.type === "category") {
@@ -155,7 +168,7 @@ function NodeGraph() {
           return;
         }
 
-        const mealNodes = meals.map((meal, index) => ({
+        const mealNodes = meals.map((meal: Meal, index: number) => ({
           id: `meal-${meal.idMeal}`,
           position: {
             x: node.position.x + 300,
@@ -168,7 +181,7 @@ function NodeGraph() {
         }));
 
         // Create edges from "View Meals" to each meal node
-        const mealEdges = meals.map((meal) => ({
+        const mealEdges = meals.map((meal: Meal) => ({
           id: `e-${node.id}-meal-${meal.idMeal}`,
           source: node.id,
           target: `meal-${meal.idMeal}`,
@@ -182,7 +195,7 @@ function NodeGraph() {
           ...prevMap,
           [node.id]: [
             ...(prevMap[node.id] || []),
-            ...mealNodes.map((meal) => meal.id),
+            ...mealNodes.map((meal: MealNode) => meal?.id),
           ],
         }));
 
@@ -194,21 +207,21 @@ function NodeGraph() {
         const viewIngredientsNode = {
           id: `view-ingredients-${node.id}`,
           position: { x: node.position.x + 300, y: node.position.y - 60 },
-          data: { label: "View Ingredients", mealId: node.id.split("-")[1] },
+          data: { label: "View Ingredients", idMeal: node.id.split("-")[1] },
           type: "view",
         };
 
         const viewTagsNode = {
           id: `view-tags-${node.id}`,
           position: { x: node.position.x + 300, y: node.position.y },
-          data: { label: "View Tags", mealId: node.id.split("-")[1] },
+          data: { label: "View Tags", idMeal: node.id.split("-")[1] },
           type: "view",
         };
 
         const viewDetailsNode = {
           id: `view-details-${node.id}`,
           position: { x: node.position.x + 300, y: node.position.y + 60 },
-          data: { label: "View Details", mealId: node.id.split("-")[1] },
+          data: { label: "View Details", idMeal: node.id.split("-")[1] },
           type: "view",
         };
 
@@ -241,15 +254,15 @@ function NodeGraph() {
         node.data.label === "View Ingredients"
       ) {
         // Handle fetching ingredients and displaying them as child nodes
-        const mealId = node.data.mealId;
+        const idMeal = node.data.idMeal;
 
         // Fetch the meal details if not already cached
-        let mealDetails = ingredientsMap[mealId];
+        let mealDetails: any = ingredientsMap[idMeal];
         if (!mealDetails) {
-          mealDetails = await fetchMealDetails(mealId);
+          mealDetails = await fetchMealDetails(idMeal);
           setIngredientsMap((prevMap) => ({
             ...prevMap,
-            [mealId]: mealDetails,
+            [idMeal]: mealDetails,
           }));
         }
 
@@ -257,7 +270,6 @@ function NodeGraph() {
         const ingredients = [];
         for (let i = 1; i <= 20; i++) {
           const ingredient = mealDetails[`strIngredient${i}`];
-          const measure = mealDetails[`strMeasure${i}`];
           if (ingredient && ingredient.trim()) {
             ingredients.push(`${ingredient}`);
           }
@@ -265,7 +277,7 @@ function NodeGraph() {
 
         // Create ingredient nodes
         const ingredientNodes = ingredients.map((ingredient, index) => ({
-          id: `ingredient-${mealId}-${index}`,
+          id: `ingredient-${idMeal}-${index}`,
           position: {
             x: node.position.x + 300,
             y: node.position.y + index * 80,
@@ -318,7 +330,7 @@ function NodeGraph() {
           return;
         }
 
-        const mealNodes = meals.map((meal, index) => ({
+        const mealNodes = meals.map((meal: MealDetail, index: number) => ({
           id: `meal-${meal.idMeal}`,
           position: {
             x: node.position.x + 300,
@@ -334,7 +346,7 @@ function NodeGraph() {
           type: "meal",
         }));
 
-        const mealEdges = mealNodes.map((mealNode) => ({
+        const mealEdges = mealNodes.map((mealNode: MealNode) => ({
           id: `e-${node.id}-${mealNode.id}`,
           source: node.id,
           target: mealNode.id,
@@ -348,15 +360,15 @@ function NodeGraph() {
         }, 200);
       } else if (node.type === "view" && node.data.label === "View Tags") {
         // Handle fetching tags and displaying them as child nodes
-        const mealId = node.data.mealId;
+        const idMeal = node.data.idMeal;
 
         // Fetch the meal details if not already cached
-        let mealDetails = ingredientsMap[mealId];
+        let mealDetails: any = ingredientsMap[idMeal];
         if (!mealDetails) {
-          mealDetails = await fetchMealDetails(mealId);
+          mealDetails = await fetchMealDetails(idMeal);
           setIngredientsMap((prevMap) => ({
             ...prevMap,
-            [mealId]: mealDetails,
+            [idMeal]: mealDetails,
           }));
         }
 
@@ -364,8 +376,8 @@ function NodeGraph() {
         if (mealDetails?.strTags) {
           const tags = mealDetails.strTags.split(",");
 
-          const tagNodes = tags.map((tag, index) => ({
-            id: `tag-${mealId}-${index}`,
+          const tagNodes = tags.map((tag: MealNode, index: number) => ({
+            id: `tag-${idMeal}-${index}`,
             position: {
               x: node.position.x + 300,
               y: node.position.y + index * 80,
@@ -374,7 +386,7 @@ function NodeGraph() {
             type: "tag",
           }));
 
-          const tagEdges = tagNodes.map((tagNode) => ({
+          const tagEdges = tagNodes.map((tagNode: MealNode) => ({
             id: `e-${node.id}-${tagNode.id}`,
             source: node.id,
             target: tagNode.id,
@@ -390,8 +402,8 @@ function NodeGraph() {
           toast.error("No tags found for this meal");
         }
       } else if (node.type === "view" && node.data.label === "View Details") {
-        const mealId = node.data.mealId;
-        const mealDetailsResponse = await fetchMealDetails(mealId);
+        const idMeal = node.data.idMeal;
+        const mealDetailsResponse = await fetchMealDetails(idMeal);
         setMealDetails(mealDetailsResponse);
         setDrawerVisible(true);
       }
@@ -416,7 +428,7 @@ function NodeGraph() {
   };
 
   return (
-    <div className="w-screen h-screen transition-all">
+    <div className="h-[calc(100vh-50px)] w-screen transition-all">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -425,76 +437,17 @@ function NodeGraph() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         fitView
-        onNodeClick={handleNodeClick}
+        onNodeClick={handleNodeClick as any}
       >
         <Background color="#ccc" variant={BackgroundVariant.Dots} />
       </ReactFlow>
 
       {/* Drawer for showing meal details */}
-      <Drawer
-        title={mealDetails?.strMeal}
-        placement="right"
-        onClose={() => setDrawerVisible(false)}
-        open={drawerVisible}
-        width={400}
-      >
-        {mealDetails && (
-          <div>
-            <img
-              src={mealDetails.strMealThumb}
-              alt={mealDetails.strMeal}
-              className="w-full mb-4"
-            />
-
-            <div className="flex items-center my-2 gap-2 flex-wrap">
-              {mealDetails?.strTags?.split(",")?.map((strTag) => {
-                return (
-                  <div className="rounded-lg border border-blue-300 text-blue-700 py-2 px-4">
-                    {strTag}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="w-full">
-              {mealDetails?.strCategory && (
-                <div className="grid grid-cols-2 w-full">
-                  <p>Category</p>
-                  <p>{mealDetails?.strCategory}</p>
-                </div>
-              )}
-              {mealDetails?.strArea && (
-                <div className="grid grid-cols-2">
-                  <p>Area</p> <p>{mealDetails?.strArea}</p>
-                </div>
-              )}
-              {mealDetails?.strYoutube && (
-                <div className="grid grid-cols-2">
-                  <p>YouTube</p>
-                  <a
-                    href={mealDetails?.strYoutube}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {mealDetails?.strYoutube}
-                  </a>
-                </div>
-              )}
-              {mealDetails?.strSource && (
-                <div className="grid grid-cols-2">
-                  <p>Recipe</p>
-                  <p>{mealDetails?.strSource}</p>
-                </div>
-              )}
-            </div>
-            <div className="border border-black p-2 my-2">
-              <p>
-                <strong>Instructions</strong>{" "}
-              </p>
-              <p>{mealDetails?.strInstructions}</p>
-            </div>
-          </div>
-        )}
-      </Drawer>
+      <MealDetails
+        mealDetails={mealDetails}
+        setDrawerVisible={setDrawerVisible}
+        drawerVisible={drawerVisible}
+      />
     </div>
   );
 }

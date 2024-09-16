@@ -15,6 +15,7 @@ import {
   fetchMealCategories,
   fetchMealsByCategory,
   fetchMealDetails,
+  fetchMealsByIngredient,
 } from "../utils/api";
 import { MealCategory } from "../utils/types";
 import { Drawer } from "antd";
@@ -258,7 +259,7 @@ function NodeGraph() {
           const ingredient = mealDetails[`strIngredient${i}`];
           const measure = mealDetails[`strMeasure${i}`];
           if (ingredient && ingredient.trim()) {
-            ingredients.push(`${ingredient} - ${measure}`);
+            ingredients.push(`${ingredient}`);
           }
         }
 
@@ -281,6 +282,66 @@ function NodeGraph() {
 
         setNodes((existingNodes) => [...existingNodes, ...ingredientNodes]);
         setEdges((existingEdges) => [...existingEdges, ...ingredientEdges]);
+
+        setTimeout(() => {
+          fitView({ padding: 0.1, duration: 500 });
+        }, 200);
+      } else if (node.type === "ingredient") {
+        // Handle clicking on an ingredient node and adding a "View Meals" node
+        const viewMealsNode = {
+          id: `view-meals-ingredient-${node.id}`,
+          position: { x: node.position.x + 300, y: node.position.y },
+          data: { label: "View Meals", ingredient: node.data.label },
+          type: "viewMealsIngredient",
+        };
+
+        const viewMealsEdge = {
+          id: `e-${node.id}-view-meals-ingredient-${node.id}`,
+          source: node.id,
+          target: viewMealsNode.id,
+        };
+
+        setNodes((existingNodes) => [...existingNodes, viewMealsNode]);
+        setEdges((existingEdges) => [...existingEdges, viewMealsEdge]);
+
+        setTimeout(() => {
+          fitView({ padding: 0.1, duration: 500 });
+        }, 200);
+      } else if (node.type === "viewMealsIngredient") {
+        // Handle fetching meals by ingredient and displaying them as child nodes
+        const ingredient = node.data.ingredient;
+
+        const meals = await fetchMealsByIngredient(ingredient);
+
+        if (!meals || meals.length === 0) {
+          toast.error(`No meals found for ingredient: ${ingredient}`);
+          return;
+        }
+
+        const mealNodes = meals.map((meal, index) => ({
+          id: `meal-${meal.idMeal}`,
+          position: {
+            x: node.position.x + 300,
+            y: node.position.y + index * 80,
+          },
+          data: {
+            label: meal.strMeal,
+            style: {
+              backgroundImage: `url(${meal.strMealThumb})`,
+              backgroundSize: "cover",
+            },
+          },
+          type: "meal",
+        }));
+
+        const mealEdges = mealNodes.map((mealNode) => ({
+          id: `e-${node.id}-${mealNode.id}`,
+          source: node.id,
+          target: mealNode.id,
+        }));
+
+        setNodes((existingNodes) => [...existingNodes, ...mealNodes]);
+        setEdges((existingEdges) => [...existingEdges, ...mealEdges]);
 
         setTimeout(() => {
           fitView({ padding: 0.1, duration: 500 });
@@ -347,6 +408,7 @@ function NodeGraph() {
     explore: Node,
     category: Node,
     viewMeals: Node,
+    viewMealsIngredient: Node,
     meal: Node,
     view: Node,
     ingredient: Node,

@@ -57,3 +57,23 @@ export const fetchMealDetails = async (mealId: string) => {
     return null;
   }
 };
+
+// Fetch meals by ingredient
+export const fetchMealsByIngredient = async (ingredient) => {
+  try {
+    const response = await fetch(
+      `https://www.themealdb.com/api/json/v1/1/filter.php?i=${ingredient}`
+    );
+    const data = await response.json();
+
+    if (!data.meals) {
+      console.warn(`No meals found for ingredient: ${ingredient}`);
+      return [];
+    }
+
+    return data.meals;
+  } catch (error) {
+    console.error("Error fetching meals by ingredient:", error);
+    return [];
+  }
+};

@@ -19,6 +19,7 @@ import {
 import { MealCategory } from "../utils/types";
 import { Drawer } from "antd";
 import "@xyflow/react/dist/style.css";
+import toast from "react-hot-toast";
 
 const initialNodes = [
   {
@@ -149,7 +150,7 @@ function NodeGraph() {
         const meals = await fetchMealsByCategory(categoryName);
 
         if (!meals || meals.length === 0) {
-          console.warn(`No meals found for category: ${categoryName}`);
+          toast.error("No meals found for this category");
           return;
         }
 
@@ -199,7 +200,7 @@ function NodeGraph() {
         const viewTagsNode = {
           id: `view-tags-${node.id}`,
           position: { x: node.position.x + 300, y: node.position.y },
-          data: { label: "View Tags" },
+          data: { label: "View Tags", mealId: node.id.split("-")[1] },
           type: "view",
         };
 
@@ -284,6 +285,49 @@ function NodeGraph() {
         setTimeout(() => {
           fitView({ padding: 0.1, duration: 500 });
         }, 200);
+      } else if (node.type === "view" && node.data.label === "View Tags") {
+        // Handle fetching tags and displaying them as child nodes
+        const mealId = node.data.mealId;
+
+        // Fetch the meal details if not already cached
+        let mealDetails = ingredientsMap[mealId];
+        if (!mealDetails) {
+          mealDetails = await fetchMealDetails(mealId);
+          setIngredientsMap((prevMap) => ({
+            ...prevMap,
+            [mealId]: mealDetails,
+          }));
+        }
+
+        // Extract and split tags if they exist
+        if (mealDetails?.strTags) {
+          const tags = mealDetails.strTags.split(",");
+
+          const tagNodes = tags.map((tag, index) => ({
+            id: `tag-${mealId}-${index}`,
+            position: {
+              x: node.position.x + 300,
+              y: node.position.y + index * 80,
+            },
+            data: { label: tag },
+            type: "tag",
+          }));
+
+          const tagEdges = tagNodes.map((tagNode) => ({
+            id: `e-${node.id}-${tagNode.id}`,
+            source: node.id,
+            target: tagNode.id,
+          }));
+
+          setNodes((existingNodes) => [...existingNodes, ...tagNodes]);
+          setEdges((existingEdges) => [...existingEdges, ...tagEdges]);
+
+          setTimeout(() => {
+            fitView({ padding: 0.1, duration: 500 });
+          }, 200);
+        } else {
+          toast.error("No tags found for this meal");
+        }
       } else if (node.type === "view" && node.data.label === "View Details") {
         const mealId = node.data.mealId;
         const mealDetailsResponse = await fetchMealDetails(mealId);
@@ -306,6 +350,7 @@ function NodeGraph() {
     meal: Node,
     view: Node,
     ingredient: Node,
+    tag: Node,
   };
 
   return (

@@ -90,17 +90,20 @@ function NodeGraph() {
 
   // Handle click on any node, including categories
   const handleNodeClick = useCallback(
-    async (node: {
-      id: string;
-      type: string;
-      position: { x: number; y: number };
-      data: {
-        label: string;
-        categoryName: string;
-        idMeal: string;
-        ingredient: string;
-      };
-    }) => {
+    async (
+      _event: React.MouseEvent,
+      node: {
+        id: string;
+        type: string;
+        position: { x: number; y: number };
+        data: {
+          label: string;
+          categoryName: string;
+          idMeal: string;
+          ingredient: string;
+        };
+      }
+    ) => {
       if (node.id === "1") {
         handleExploreClick();
       } else if (node.type === "category") {

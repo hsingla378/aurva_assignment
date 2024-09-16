@@ -25,7 +25,7 @@ import MealDetails from "./MealDetails";
 const initialNodes = [
   {
     id: "1",
-    position: { x: 300, y: 50 },
+    position: { x: 400, y: 50 },
     data: {
       label: "Explore",
     },
@@ -129,7 +129,7 @@ function NodeGraph() {
         // Add "View Meals" node (expand)
         const viewMealsNode = {
           id: viewMealsNodeId,
-          position: { x: node.position.x + 300, y: node.position.y },
+          position: { x: node.position.x + 200, y: node.position.y },
           data: {
             label: "View Meals",
             categoryName: node.data.label,
@@ -171,7 +171,7 @@ function NodeGraph() {
         const mealNodes = meals.map((meal: Meal, index: number) => ({
           id: `meal-${meal.idMeal}`,
           position: {
-            x: node.position.x + 300,
+            x: node.position.x + 200,
             y: node.position.y + index * 80,
           },
           data: {
@@ -206,21 +206,21 @@ function NodeGraph() {
         // Handle clicking on a meal node and expanding it to show options
         const viewIngredientsNode = {
           id: `view-ingredients-${node.id}`,
-          position: { x: node.position.x + 300, y: node.position.y - 60 },
+          position: { x: node.position.x + 200, y: node.position.y - 60 },
           data: { label: "View Ingredients", idMeal: node.id.split("-")[1] },
           type: "view",
         };
 
         const viewTagsNode = {
           id: `view-tags-${node.id}`,
-          position: { x: node.position.x + 300, y: node.position.y },
+          position: { x: node.position.x + 200, y: node.position.y },
           data: { label: "View Tags", idMeal: node.id.split("-")[1] },
           type: "view",
         };
 
         const viewDetailsNode = {
           id: `view-details-${node.id}`,
-          position: { x: node.position.x + 300, y: node.position.y + 60 },
+          position: { x: node.position.x + 200, y: node.position.y + 60 },
           data: { label: "View Details", idMeal: node.id.split("-")[1] },
           type: "view",
         };
@@ -279,7 +279,7 @@ function NodeGraph() {
         const ingredientNodes = ingredients.map((ingredient, index) => ({
           id: `ingredient-${idMeal}-${index}`,
           position: {
-            x: node.position.x + 300,
+            x: node.position.x + 200,
             y: node.position.y + index * 80,
           },
           data: { label: ingredient },
@@ -302,7 +302,7 @@ function NodeGraph() {
         // Handle clicking on an ingredient node and adding a "View Meals" node
         const viewMealsNode = {
           id: `view-meals-ingredient-${node.id}`,
-          position: { x: node.position.x + 300, y: node.position.y },
+          position: { x: node.position.x + 200, y: node.position.y },
           data: { label: "View Meals", ingredient: node.data.label },
           type: "viewMealsIngredient",
         };
@@ -333,15 +333,11 @@ function NodeGraph() {
         const mealNodes = meals.map((meal: MealDetail, index: number) => ({
           id: `meal-${meal.idMeal}`,
           position: {
-            x: node.position.x + 300,
+            x: node.position.x + 200,
             y: node.position.y + index * 80,
           },
           data: {
             label: meal.strMeal,
-            style: {
-              backgroundImage: `url(${meal.strMealThumb})`,
-              backgroundSize: "cover",
-            },
           },
           type: "meal",
         }));
@@ -379,7 +375,7 @@ function NodeGraph() {
           const tagNodes = tags.map((tag: MealNode, index: number) => ({
             id: `tag-${idMeal}-${index}`,
             position: {
-              x: node.position.x + 300,
+              x: node.position.x + 200,
               y: node.position.y + index * 80,
             },
             data: { label: tag },

@@ -1,5 +1,9 @@
 # Food Explorer
 
+[Assignment Reference](https://docs.google.com/document/d/1WV6fZhiSuqCyZmTxRjctBZgOXsTAoKS4Kj5k3FyB3Mc/edit)
+
+[Live App](https://aurvaassignment.vercel.app/)
+
 ## Objective
 
 The **Food Explorer** is a graph-based food explorer app where users can visually explore different food categories, meals, and their details like ingredients, tags, and more. The app utilizes a node-based canvas interface for an intuitive and interactive experience.

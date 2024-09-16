@@ -41,7 +41,9 @@ function NodeGraph() {
   const [exploreClicked, setExploreClicked] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [mealDetails, setMealDetails] = useState<MealDetail | null>(null);
-  const [ingredientsMap, setIngredientsMap] = useState({});
+  const [ingredientsMap, setIngredientsMap] = useState<
+    Record<string, MealDetail | undefined>
+  >({});
 
   const { fitView } = useReactFlow();
 
@@ -88,20 +90,17 @@ function NodeGraph() {
 
   // Handle click on any node, including categories
   const handleNodeClick = useCallback(
-    async (
-      event: React.MouseEvent,
-      node: {
-        id: string;
-        type: string;
-        position: { x: number; y: number };
-        data: {
-          label: string;
-          categoryName: string;
-          idMeal: string;
-          ingredient: string;
-        };
-      }
-    ) => {
+    async (node: {
+      id: string;
+      type: string;
+      position: { x: number; y: number };
+      data: {
+        label: string;
+        categoryName: string;
+        idMeal: string;
+        ingredient: string;
+      };
+    }) => {
       if (node.id === "1") {
         handleExploreClick();
       } else if (node.type === "category") {

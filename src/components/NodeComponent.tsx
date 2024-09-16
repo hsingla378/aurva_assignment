@@ -12,7 +12,6 @@ const NodeComponent: React.FC<XyflowNodeProps> = ({ data, type }) => {
     icon: Icon,
     iconColor,
     hover,
-    borderRadius,
     padding,
   } = getNodeStyle(type);
 
@@ -21,7 +20,6 @@ const NodeComponent: React.FC<XyflowNodeProps> = ({ data, type }) => {
       style={{
         border,
         backgroundColor: isHovered ? hover.backgroundColor : backgroundColor,
-        borderRadius,
         padding,
         boxShadow: "rgba(17, 12, 46, 0.15) 0px 48px 100px 0px",
         transition: "all 0.3s ease",
